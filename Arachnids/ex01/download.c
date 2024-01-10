@@ -15,33 +15,35 @@ int isWhitespace(char c) {
 }
 
 void scrapeImages(const char* htmlContent, struct Images* imgUrls) {
-    const char* extensions[] = { ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
-
-    const char* htmlPtr = htmlContent;
+    const char  *extensions[] = { ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
+    const char  *htmlPtr = htmlContent;
 
     while (*htmlPtr != '\0') {
-        for (size_t i = 0; i < sizeof(extensions) / sizeof(extensions[0]); ++i) {
+        for (size_t i = 0; i < 5; ++i) {
             size_t extLength = strlen(extensions[i]);
             if (strncmp(htmlPtr, extensions[i], extLength) == 0) {
-                const char* startPos = htmlPtr - 7;
-                const char* endPos = htmlPtr + extLength;
+                const char  *startPos = htmlPtr;
                 while (startPos > htmlContent && !isWhitespace(*startPos) && *startPos != '"' && *startPos != '\'' && *startPos != ';' && *startPos != '(' && *startPos != ')' && *startPos != '=' && *startPos != ',' && *startPos != '[' && *startPos != ']' && *startPos != '{' && *startPos != '}') {
                     --startPos;
                 }
                 ++startPos;
-                while (!isWhitespace(*endPos) && *endPos != '"' && *endPos != '\'' && *endPos != ';' && *endPos != '(' && *endPos != ')' && *endPos != ',' && *endPos != '[' && *endPos != ']' && *endPos != '{' && *endPos != '}' && *endPos != '\0') {
-                    ++endPos;
+
+                if (strncmp(startPos, "http://", 7) == 0 || strncmp(startPos, "https://", 8) == 0) {
+                    const char  *endPos = htmlPtr + extLength;
+                    while (!isWhitespace(*endPos) && *endPos != '"' && *endPos != '\'' && *endPos != ';' && *endPos != '(' && *endPos != ')' && *endPos != ',' && *endPos != '[' && *endPos != ']' && *endPos != '{' && *endPos != '}' && *endPos != '\0') {
+                        ++endPos;
+                    }
+                    size_t urlLength = endPos - startPos;
+                    char* imgUrl = malloc(urlLength + 1);
+                    strncpy(imgUrl, startPos, urlLength);
+                    imgUrl[urlLength] = '\0';
+                    imgUrls->urls = realloc(imgUrls->urls, (imgUrls->count + 1) * sizeof(char*));
+                    imgUrls->urls[imgUrls->count] = imgUrl;
+                    imgUrls->ext = realloc(imgUrls->ext, (imgUrls->count + 1) * sizeof(char*));
+                    imgUrls->ext[imgUrls->count] = strdup(extensions[i]);
+                    ++imgUrls->count;
+                    htmlPtr += extLength;
                 }
-                size_t urlLength = endPos - startPos;
-                char* imgUrl = malloc(urlLength + 1);
-                strncpy(imgUrl, startPos, urlLength);
-                imgUrl[urlLength] = '\0';
-                imgUrls->urls = realloc(imgUrls->urls, (imgUrls->count + 1) * sizeof(char*));
-                imgUrls->urls[imgUrls->count] = imgUrl;
-                imgUrls->ext = realloc(imgUrls->ext, (imgUrls->count + 1) * sizeof(char*));
-                imgUrls->ext[imgUrls->count] = strdup(extensions[i]);
-                ++imgUrls->count;
-                htmlPtr += extLength;
             }
         }
         ++htmlPtr;
@@ -50,8 +52,11 @@ void scrapeImages(const char* htmlContent, struct Images* imgUrls) {
 
 int downloadImage(const char* url, const char* ext, const char* path)
 {
-    CURL *curl;
-    FILE *fp;
+    CURL        *curl;
+    FILE        *fp;
+    static int  imgNb = 0;
+    char        temp[20];
+    char        filename[256];
 
     curl = curl_easy_init();
     if (!curl) {
@@ -59,13 +64,12 @@ int downloadImage(const char* url, const char* ext, const char* path)
         return 0;
     }
 
-    char filename[256];
     strcpy(filename, path);
     strcat(filename, "image_");
-    char temp[20];
-    sprintf(temp, "%d", rand());
+    sprintf(temp,"%d", imgNb);
     strcat(filename, temp);
     strcat(filename, ext);
+    imgNb++;
 
     fp = fopen(filename, "wb");
     if (!fp) {
