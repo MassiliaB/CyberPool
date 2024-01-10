@@ -9,6 +9,9 @@
 #include "libxml/HTMLparser.h"
 #include "libxml/xpath.h"
 
+#define D_PATH "./data/"
+#define D_VALUE 5
+
 struct CURLResp
 {
 	char	*html;
@@ -20,6 +23,15 @@ struct Images {
     size_t count;
 	char** ext;
 };
+
+typedef struct s_data {
+
+    int opt_r;
+    int opt_l;
+    char *opt_p;
+    char *url;
+
+} t_data;
 
 int request(struct CURLResp *resp, const char *url);
 struct CURLResp GetRequest(const char *url);
