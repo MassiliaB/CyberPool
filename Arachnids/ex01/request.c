@@ -8,7 +8,7 @@ static size_t	WriteHTML(void *contents, size_t size, size_t nmemb, void *userp)
 
     if (!ptr)
     {
-    	printf("Not enough memory available (realloc returned NULL)\n");
+        fprintf(stderr, "Err: Not enough memory available (realloc returned NULL)\n");
      	return 0;
      }
      resp->html = ptr;
@@ -23,7 +23,7 @@ struct CURLResp GetRequest(const char *url)
 {
     CURL *curl_request = curl_easy_init();
     if (!curl_request) {
-        fprintf(stderr, "Curl initialization failed\n");
+        fprintf(stderr, "Err: Curl initialization failed\n");
         exit(EXIT_FAILURE);
     }
     struct CURLResp resp;
@@ -38,11 +38,10 @@ struct CURLResp GetRequest(const char *url)
     CURLcode res = curl_easy_perform(curl_request);
 
     if (res != CURLE_OK) {
-        fprintf(stderr, "GET request failed: %s\n", curl_easy_strerror(res));
+        fprintf(stderr, "Err: GET request failed: %s\n", curl_easy_strerror(res));
     }
 
     curl_easy_cleanup(curl_request);
-
     return resp;
 }
 
@@ -51,7 +50,7 @@ int request(struct CURLResp *resp, const char *url)
 	curl_global_init(CURL_GLOBAL_ALL);
     CURL *curl_request = curl_easy_init();
     if (!curl_request){
-        fprintf(stderr, "Curl initialization failed\n");
+        fprintf(stderr, "Err: Curl initialization failed\n");
         return 0;
     }
     *resp = GetRequest(url);

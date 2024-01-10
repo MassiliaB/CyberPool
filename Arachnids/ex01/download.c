@@ -8,13 +8,14 @@ void freeImg(struct Images* imgUrls)
     }
     free(imgUrls->urls);
     free(imgUrls->ext);
+    imgUrls->count = 0;
 }
 
 int isWhitespace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
-void scrapeImages(const char* htmlContent, struct Images* imgUrls) {
+void scrapeImages(const char* htmlContent, struct Images* imgUrls, int currentDepth, int maxDepth) {
     const char  *extensions[] = { ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
     const char  *htmlPtr = htmlContent;
 
@@ -42,6 +43,13 @@ void scrapeImages(const char* htmlContent, struct Images* imgUrls) {
                     imgUrls->ext = realloc(imgUrls->ext, (imgUrls->count + 1) * sizeof(char*));
                     imgUrls->ext[imgUrls->count] = strdup(extensions[i]);
                     ++imgUrls->count;
+                    if (currentDepth < maxDepth) {
+                        struct CURLResp linkedResp;
+                        if (request(&linkedResp, imgUrl)) {
+                            scrapeImages(linkedResp.html, imgUrls, currentDepth + 1, maxDepth);
+                            free(linkedResp.html);
+                        }
+                    }
                     htmlPtr += extLength;
                 }
             }
@@ -60,7 +68,7 @@ int downloadImage(const char* url, const char* ext, const char* path)
 
     curl = curl_easy_init();
     if (!curl) {
-        fprintf(stderr, "Curl initialization failed\n");
+        fprintf(stderr, "Err: Curl initialization failed\n");
         return 0;
     }
 
@@ -73,7 +81,7 @@ int downloadImage(const char* url, const char* ext, const char* path)
 
     fp = fopen(filename, "wb");
     if (!fp) {
-        fprintf(stderr, "Failed to open file for writing\n");
+        fprintf(stderr, "Err: Failed to open file for writing\n");
         curl_easy_cleanup(curl);
         return 0;
     }
@@ -86,13 +94,11 @@ int downloadImage(const char* url, const char* ext, const char* path)
     fclose(fp);
     curl_easy_cleanup(curl);
 
-        printf("image = %s and %s\n", filename, url);
+    printf("Downloaded image = %s and link %s\n", filename, url);
     if (res != CURLE_OK) {
-        fprintf(stderr, "Failed to download image: %s\n", curl_easy_strerror(res));
+        fprintf(stderr, "Err: Failed to download image: %s\n", curl_easy_strerror(res));
         remove(filename);
         return 0;
     }
-
-    printf("Downloaded: %s\n", filename);
     return 1;
 }
