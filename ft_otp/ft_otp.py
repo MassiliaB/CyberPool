@@ -25,8 +25,8 @@ def passwdGen(len: int = 6):
     with open("ft_otp.key", "r") as keyfile:
         file = keyfile.read()
     current_time = math.floor(time.time())
-    step = 30
-    t = math.floor(current_time / step)
+    step_per_second = 30
+    t = math.floor(current_time / step_per_second)
     hash_value = hmac.new(
         bytes(file, encoding="utf-8"),
         t.to_bytes(length=8, byteorder="big"),
