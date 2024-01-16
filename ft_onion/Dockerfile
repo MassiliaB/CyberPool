@@ -1,11 +1,13 @@
 FROM nginx:alpine
-RUN apk update && apk add tor
+RUN apk update && apk upgrade && apk --no-cache add tor bash 
 
 COPY index.html /usr/share/nginx/html
-COPY nginx.conf .
+COPY nginx.conf /etc/nginx/nginx.conf
 COPY torrc /etc/tor/torrc
-RUN rm /etc/tor/torrc.sample && chown -R root /var/lib/tor
-# COPY sshd_config .
+COPY launch.sh /usr/local/bin/launch
 
-EXPOSE 8080
-CMD ["sh", "-c", "nginx -g daemon off; tor -f /etc/tor/torrc"]
+RUN rm /etc/tor/torrc.sample && chown -R root /var/lib/tor && chmod -R 700 /var/lib/tor; \
+    chmod +x /usr/local/bin/launch
+
+EXPOSE 80
+CMD ["bash", "-c", "launch"]
