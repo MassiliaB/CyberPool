@@ -8,8 +8,8 @@ COPY torrc /etc/tor/torrc
 COPY launch.sh /usr/local/bin/launch
 COPY nft-rules /etc/nftables.conf
 
-RUN rm /etc/tor/torrc.sample && chown -R root /var/lib/tor && chmod -R 700 /var/lib/tor; \
+RUN chown -R debian-tor /var/lib/tor; \
     chmod +x /usr/local/bin/launch
 
 EXPOSE 80 22
-CMD ["bash", "-c", "launch"]
+CMD ["/bin/sh", "-c", "launch"]
