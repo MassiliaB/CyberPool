@@ -7,8 +7,7 @@ onion_hostname=$(cat /var/lib/tor/onion/hostname)
 echo "server_name $onion_hostname;" > serverName
 sed -i 's/server_name _;/'"$(cat serverName)"'/' /etc/nginx/nginx.conf
 echo "PrivateNetwork=yes" > /lib/systemd/system/nginx.service
-
-service nginx reload
-#tor -f /etc/tor/torrc
+#ln -sf /etc/nginx/sites-available/
+nginx -t
 #nginx -g 'daemon off;'
 /bin/bash
