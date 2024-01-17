@@ -11,4 +11,4 @@ echo "PrivateNetwork=yes" > /lib/systemd/system/nginx.service
 service nginx reload
 #tor -f /etc/tor/torrc
 #nginx -g 'daemon off;'
-/bin/sh
+/bin/bash
