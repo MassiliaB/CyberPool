@@ -9,13 +9,11 @@ RUN apt-get update && apt-get upgrade -y && \
     rm /etc/nginx/sites-enabled/default && rm /etc/nginx/sites-available/default
 
 COPY index.html /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/
+COPY nginx.conf /etc/nginx/nginx.conf
 COPY onion.conf /etc/nginx/sites-available/
 COPY torrc /etc/tor/torrc
 COPY launch.sh /usr/local/bin/launch
-# COPY nft-rules /etc/nftables.conf
 
-RUN chown -R www-data /var/lib/tor; \
-    chmod +x /usr/local/bin/launch
+RUN chmod +x /usr/local/bin/launch
 
 CMD ["/bin/bash", "-c", "launch"]

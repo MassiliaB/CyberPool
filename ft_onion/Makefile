@@ -2,10 +2,10 @@ build:
 	docker build -t tor .
 
 run:
-	docker run -d --name tor -p 80:80 tor
+	docker run -d --name tor tor -v
 
 run_:
-	docker run -it -p 80:80 tor
+	docker run -it tor /bin/bash
 
 exec:
 	docker exec -it tor /bin/bash
