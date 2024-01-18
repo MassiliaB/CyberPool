@@ -8,6 +8,8 @@ RUN apt-get update && apt-get upgrade -y && \
     apt-get update && apt-get install -y tor deb.torproject.org-keyring && \
     groupadd -r nginx && useradd -r -g nginx nginx
 
+VOLUME /var/wwww/onion
+
 COPY index.html /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY torrc /etc/tor/torrc
