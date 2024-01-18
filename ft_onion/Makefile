@@ -8,7 +8,7 @@ run_:
 	docker run -it -p 80:80 tor
 
 exec:
-	docker exec -it tor_container
+	docker exec -it tor /bin/bash
 
 clear_and_run: clear build run_
 

@@ -3,11 +3,9 @@
 service tor start
 onion_hostname=$(cat /var/lib/tor/onion/hostname)
 echo "server_name $onion_hostname;" > serverName
-sed -i 's/server_name _;/'"$(cat serverName)"'/' /etc/nginx/sites-enabled/onion.conf
+sed -i 's/server_name _;/'"$(cat serverName)"'/' /etc/nginx/sites-available/onion.conf
 
-rm /etc/nginx/sites-available/default
-rm /etc/nginx/sites-enabled/default
-ln -sf /etc/nginx/sites-enabled/onion.conf /etc/nginx/sites-available/
+ln -sf /etc/nginx/sites-available/onion.conf /etc/nginx/sites-enabled/onion.conf
 
 nginx -t
 echo "Hostname: $onion_hostname\n"
