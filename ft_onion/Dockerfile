@@ -8,7 +8,8 @@ RUN apt-get update && apt-get upgrade -y && \
     apt-get update && apt-get install -y tor deb.torproject.org-keyring
 
 COPY index.html /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY nginx.conf /etc/nginx/
+COPY onion.conf /etc/nginx/sites-enabled/
 COPY torrc /etc/tor/torrc
 COPY launch.sh /usr/local/bin/launch
 # COPY nft-rules /etc/nftables.conf
