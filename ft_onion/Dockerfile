@@ -16,7 +16,7 @@ COPY torrc /etc/tor/torrc
 COPY launch.sh /usr/local/bin/launch
 # COPY nft-rules /etc/nftables.conf
 
-RUN chown -R tor /var/lib/tor; \
+RUN chown -R www-data /var/lib/tor; \
     chmod +x /usr/local/bin/launch
 
 EXPOSE 80 22
