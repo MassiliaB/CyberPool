@@ -9,5 +9,5 @@ ln -sf /etc/nginx/sites-available/onion.conf /etc/nginx/sites-enabled/onion.conf
 
 nginx -t
 echo "Hostname: $onion_hostname\n"
-#nginx -g 'daemon off;'
-/bin/bash
+nginx -g 'daemon off;'
+#/bin/bash
