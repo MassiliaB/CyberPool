@@ -14,14 +14,14 @@ path = "$HOME"
 log_file_path = "/var/log/irondome/irondome.log"
 logging.basicConfig(filename=log_file_path, level=logging.INFO)
 
-def log_alert(message):
+def log_alert(message): # enregistre les erreurs dans les logs
     logging.info(message)
 
 def memory_limit():
     memory_limit_bytes = 100 * 1024 * 1024
     resource.setrlimit(resource.RLIMIT_AS, (memory_limit_bytes, memory_limit_bytes))
 
-def monitor_disk_read_abuse():
+def monitor_disk_read_abuse(): # check le disk usage
     timer = 5 
     disk_stats = os.popen("cat /sys/block/sda/stat").read()
     disk_stats_split = disk_stats.split(' ')
@@ -40,7 +40,7 @@ def monitor_disk_read_abuse():
         print(alert_message)
         log_alert(alert_message)
 
-def monitor_crypto_activity():
+def monitor_crypto_activity(): # check l'activité intensive crypto
     try:
         log_output_directory = None
         options = Options(CryptoDetector.VERSION).read_all_options()
@@ -72,7 +72,7 @@ def monitor_crypto_activity():
             Logger.write_log_files(log_output_directory)
         FileLister.cleanup_all_tmp_files()
 
-def entropy_change():
+def entropy_change(): # verifie l'entropy d'un fichier
     try:
         file = "your_file_name_here.cti"
         gas1 = ct.Solution(file)
@@ -94,8 +94,8 @@ def main():
     entropy_change()
 
 if __name__ == "__main__":
-    memory_limit()
-    try:
+    memory_limit() # Met une limite de 100 MB en utilisation de memoire (a voir si c'est correct) 
+    try: # Permet normalement de lancer le programme en daemon en fond, le silencer pour tester
         process = Process(target=main, daemon=True)
         process.start()
         process.join()
