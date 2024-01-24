@@ -10,8 +10,9 @@ import argparse
 # from cryptodetector.exceptions import CryptoDetectorError
 import cantera as ct
 import numpy as np
+import math
 
-log_file_path = "/var/log/irondome/irondome.log"
+log_file_path = "log/irondome.log"
 
 logging.basicConfig(filename=log_file_path, level=logging.INFO)
 
@@ -98,17 +99,20 @@ def monitor_disk_read_abuse(): # check le disk usage
 
 def process_file(file_path):
     try:
-        file_name = os.path.basename(file_path)
-        gas = ct.Solution(file_path)
-        alert_message = f'Entropy change detected for file {file_name}: {gas}'
-        print(alert_message)
-        log_alert(alert_message)
+        with open(file_path, "rb") as file:
+            counters = {byte: 0 for byte in range(2 ** 8)} 
+            for byte in file.read():
+                counters[byte] += 1
+            filesize = file.tell()
+            probabilities = [counter / filesize for counter in counters.values()]
+            entropy = -sum(probability * math.log2(probability) for probability in probabilities if probability > 0)
+            print(f"Entropy of {os.path.basename(file_path)}: {entropy}")
     except Exception as expn:
         error_message = f"Error processing file {file_path}: {str(expn)}\n\n{traceback.format_exc()}"
         print(error_message)
         log_alert(error_message)
 
-def entropy_change(paths): # verifie l'entropy d'un fichier
+def entropy_change(paths):
     try:
         for path in paths:
             if os.path.isfile(path):
