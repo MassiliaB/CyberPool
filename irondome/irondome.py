@@ -16,25 +16,6 @@ from threading import Thread, Event
 log_file_path = "log/irondome.log"
 logging.basicConfig(filename=log_file_path, level=logging.INFO)
 
-class MonitoringThread(Thread):
-    def __init__(self, target, args=(), memory_limit_mb=None):
-        super().__init__(target=target, args=args)
-        self.stop_event = Event()
-        self.memory_limit_mb = memory_limit_mb
-
-    def run(self):
-        # Set memory limit if provided
-        if self.memory_limit_mb:
-            self.set_memory_limit(self.memory_limit_mb)
-
-        while not self.stop_event.is_set():
-            self._target(*self._args, **self._kwargs)
-
-    def set_memory_limit(self, limit_mb):
-        # Convert MB to bytes
-        limit_bytes = limit_mb * 1024 * 1024
-        resource.setrlimit(resource.RLIMIT_AS, (limit_bytes, limit_bytes))
-
 def log_alert(message): # enregistre les erreurs dans les logs
     logging.info(message)
 
@@ -43,49 +24,45 @@ def memory_limit():
     resource.setrlimit(resource.RLIMIT_AS, (memory_limit_bytes, memory_limit_bytes))
 
 def monitor_disk_read_abuse(): # check le disk usage
-    while not disk_read_thread.stop_event.is_set():
-        timer = 60 
-        stats = os.popen("cat /sys/block/sda/stat").read()
-        stats_split = stats.split(' ')
-        stats_array = list(filter(None, stats_split))
+    stats = os.popen("cat /sys/block/sda/stat").read()
+    stats_split = stats.split(' ')
+    stats_array = list(filter(None, stats_split))
 
-        time.sleep(timer)
+    stats_2 = os.popen("cat /sys/block/sda/stat").read()
+    stats_split_2 = stats_2.split(' ')
+    stats_array_2 = list(filter(None, stats_split_2))
+    iototal = [
+    int(stats_array_2[0]) - int(stats_array[0]),
+    int(stats_array_2[1]) - int(stats_array[1]),
+    int(stats_array_2[2]) - int(stats_array[2]),
+    int(stats_array_2[3]) - int(stats_array[3]),
+    int(stats_array_2[4]) - int(stats_array[4]),
+    int(stats_array_2[5]) - int(stats_array[5]),
+    int(stats_array_2[6]) - int(stats_array[6]),
+    int(stats_array_2[7]) - int(stats_array[7]),
+    int(stats_array_2[8]) - int(stats_array[8]),
+    int(stats_array_2[9]) - int(stats_array[9]),
+    int(stats_array_2[10]) - int(stats_array[10])
+    ]
 
-        stats_2 = os.popen("cat /sys/block/sda/stat").read()
-        stats_split_2 = stats_2.split(' ')
-        stats_array_2 = list(filter(None, stats_split_2))
-        iototal = [
-        int(stats_array_2[0]) - int(stats_array[0]),
-        int(stats_array_2[1]) - int(stats_array[1]),
-        int(stats_array_2[2]) - int(stats_array[2]),
-        int(stats_array_2[3]) - int(stats_array[3]),
-        int(stats_array_2[4]) - int(stats_array[4]),
-        int(stats_array_2[5]) - int(stats_array[5]),
-        int(stats_array_2[6]) - int(stats_array[6]),
-        int(stats_array_2[7]) - int(stats_array[7]),
-        int(stats_array_2[8]) - int(stats_array[8]),
-        int(stats_array_2[9]) - int(stats_array[9]),
-        int(stats_array_2[10]) - int(stats_array[10])
-        ]
-
-        description = [
-        "\n-----------Disk read monitoring----------\n",
-        "IO stats over last " + str(timer) + " seconds \n\n",
-        "read I/Os : " + str(iototal[0]),
-        "read merges : " + str(iototal[1]),
-        "read sectors : " + str(iototal[2]),
-        "read ticks (ms) : " + str(iototal[3]),
-        "write I/Os : " + str(iototal[4]),
-        "write merges : " + str(iototal[5]),
-        "write sectors : " + str(iototal[6]),
-        "write ticks (ms) : " + str(iototal[7]),
-        "in_flight : " + str(iototal[8]),
-        "io_ticks (ms) : " + str(iototal[9]),
-        "time_in_queue (ms) : " + str(iototal[10]),
-        "\n---------------------\n"
-        ]
-        for d in description:
-            log_alert(d)
+    description = [
+    "\n-----------Disk read monitoring----------\n",
+    "IO stats over last " + str(timer) + " seconds \n\n",
+    "read I/Os : " + str(iototal[0]),
+    "read merges : " + str(iototal[1]),
+    "read sectors : " + str(iototal[2]),
+    "read ticks (ms) : " + str(iototal[3]),
+    "write I/Os : " + str(iototal[4]),
+    "write merges : " + str(iototal[5]),
+    "write sectors : " + str(iototal[6]),
+    "write ticks (ms) : " + str(iototal[7]),
+    "in_flight : " + str(iototal[8]),
+    "io_ticks (ms) : " + str(iototal[9]),
+    "time_in_queue (ms) : " + str(iototal[10]),
+    "\n---------------------\n"
+    ]
+    for d in description:
+        log_alert(d)
 
 # def monitor_crypto_activity(): # check l'activité intensive crypto
 #     try:
@@ -138,7 +115,7 @@ def process_file(file_path):
 
 def entropy_change(paths):
     try:
-        while not entropy_thread.stop_event.is_set():
+        while True:
             for path in paths:
                 if os.path.isfile(path):
                     process_file(path)
@@ -149,7 +126,6 @@ def entropy_change(paths):
                 else:
                     log_alert("\n-----------File entropy monitoring----------\n")
                     log_alert(f"Invalid path: {path}")
-            time.sleep(60)
     except Exception as expn:
         error_message = "\n-----------File entropy monitoring----------\n"
         error_message = error_message + f"Error in entropy_change: {str(expn)}\n\n{traceback.format_exc()}"
@@ -169,17 +145,10 @@ def main():
     if os.geteuid() != 0:
         exit("You need to have root privileges to run this script.\n Exiting.")
     paths = parse_arguments()
-
-    # Create threads for monitoring functions
-    global disk_read_thread, entropy_thread
-    disk_read_thread = MonitoringThread(target=monitor_disk_read_abuse,memory_limit_mb=100)
-    entropy_thread = MonitoringThread(target=entropy_change, args=(paths,), memory_limit_mb=100)
-    # Start the threads
-    disk_read_thread.start()
-    entropy_thread.start()
-    # Join the threads to wait for them to finish
-    disk_read_thread.join()
-    entropy_thread.join()
+    while True:
+        monitor_disk_read_abuse()
+        entropy_change(paths)
+        time.sleep(60)
     # monitor_crypto_activity()
 
 if __name__ == "__main__":
