@@ -12,6 +12,7 @@ import cantera as ct
 import numpy as np
 import math
 from threading import Thread, Event
+
 log_file_path = "log/irondome.log"
 logging.basicConfig(filename=log_file_path, level=logging.INFO)
 
