@@ -96,14 +96,29 @@ def monitor_disk_read_abuse(): # check le disk usage
 #             Logger.write_log_files(log_output_directory)
 #         FileLister.cleanup_all_tmp_files()
 
+def process_file(file_path):
+    try:
+        file_name = os.path.basename(file_path)
+        gas = ct.Solution(file_path)
+        alert_message = f'Entropy change detected for file {file_name}: {gas}'
+        print(alert_message)
+        log_alert(alert_message)
+    except Exception as expn:
+        error_message = f"Error processing file {file_path}: {str(expn)}\n\n{traceback.format_exc()}"
+        print(error_message)
+        log_alert(error_message)
+
 def entropy_change(paths): # verifie l'entropy d'un fichier
     try:
         for path in paths:
-            file_name = path.split("/")[-1]
-            gas = ct.Solution(path)
-            alert_message = f'Entropy change detected for file {file_name}: {gas}'
-            print(alert_message)
-            log_alert(alert_message)
+            if os.path.isfile(path):
+                process_file(path)
+            elif os.path.isdir(path):
+                files_in_directory = [os.path.join(path, file) for file in os.listdir(path) if os.path.isfile(os.path.join(path, file))]
+                for file_path in files_in_directory:
+                    process_file(file_path)
+            else:
+                print(f"Invalid path: {path}")
     except Exception as expn:
         error_message = f"Error in entropy_change: {str(expn)}\n\n{traceback.format_exc()}"
         print(error_message)
