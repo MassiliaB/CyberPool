@@ -20,14 +20,12 @@ class MonitoringThread(Thread):
     def __init__(self, target, args=()):
         super().__init__(target=target, args=args)
         self.stop_event = Event()
-    def run(self):
-        while not self.stop_event.is_set():
-            self._target(*self._args, **self._kwargs)
 
-def log_alert(message):  # enregistre les erreurs dans les logs
-    with open(log_file_path, 'a') as log_file:
-        log_file.write(message + '\n')
-        log_file.flush()
+    def stop(self):
+        self.stop_event.set()
+
+def log_alert(message): # enregistre les erreurs dans les logs
+    logging.info(message)
 
 def memory_limit():
     memory_limit_bytes = 100 * 1024 * 1024
@@ -128,18 +126,24 @@ def process_file(file_path):
         log_alert(error_message)
 
 def entropy_change(paths):
-    while not entropy_thread.stop_event.is_set():
-        for path in paths:
-            if os.path.isfile(path):
-                process_file(path)
-            elif os.path.isdir(path):
-                files_in_directory = [os.path.join(path, file) for file in os.listdir(path) if os.path.isfile(os.path.join(path, file))]
-                for file_path in files_in_directory:
-                    process_file(file_path)
-            else:
-                log_alert("\n-----------File entropy monitoring----------\n")
-                log_alert(f"Invalid path: {path}")
-        time.sleep(60)
+    try:
+        while not entropy_thread.stop_event.is_set():
+            for path in paths:
+                if os.path.isfile(path):
+                    process_file(path)
+                elif os.path.isdir(path):
+                    files_in_directory = [os.path.join(path, file) for file in os.listdir(path) if os.path.isfile(os.path.join(path, file))]
+                    for file_path in files_in_directory:
+                        process_file(file_path)
+                else:
+                    log_alert("\n-----------File entropy monitoring----------\n")
+                    log_alert(f"Invalid path: {path}")
+            time.sleep(60)
+    except Exception as expn:
+        error_message = "\n-----------File entropy monitoring----------\n"
+        error_message = error_message + f"Error in entropy_change: {str(expn)}\n\n{traceback.format_exc()}"
+        print(error_message)
+        log_alert(error_message)
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
@@ -169,13 +173,13 @@ def main():
 
 if __name__ == "__main__":
     memory_limit() # Met une limite de 100 MB en utilisation de memoire (a voir si c'est correct) 
-    main()
-    # try: # Permet normalement de lancer le programme en daemon en fond, le silencer pour tester
+    try: # Permet normalement de lancer le programme en daemon en fond, le silencer pour tester
+        main()
     #     process = Process(target=main, daemon=True)
     #     process.start()
     #     process.join()
-    # except MemoryError:
-    #     error_message = '\n\nERROR: Memory limit of 100MB exceeded.'
-    #     print(error_message)
-    #     log_alert(error_message)
-    #     sys.exit(1)
+    except MemoryError:
+        error_message = '\n\nERROR: Memory limit of 100MB exceeded.'
+        print(error_message)
+        log_alert(error_message)
+        sys.exit(1)
