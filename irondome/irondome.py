@@ -5,13 +5,14 @@ import logging
 from multiprocessing import current_process, Process
 import time
 import traceback
-from cryptodetector import CryptoDetector, Output, Options, Logger, FileLister
-from cryptodetector.exceptions import CryptoDetectorError
+import argparse
+# from cryptodetector import CryptoDetector, Output, Options, Logger, FileLister
+# from cryptodetector.exceptions import CryptoDetectorError
 import cantera as ct
 import numpy as np
 
-path = "$HOME"
 log_file_path = "/var/log/irondome/irondome.log"
+
 logging.basicConfig(filename=log_file_path, level=logging.INFO)
 
 def log_alert(message): # enregistre les erreurs dans les logs
@@ -63,67 +64,77 @@ def monitor_disk_read_abuse(): # check le disk usage
     for d in description:
         print(d)
 
-def monitor_crypto_activity(): # check l'activité intensive crypto
-    try:
-        log_output_directory = None
-        options = Options(CryptoDetector.VERSION).read_all_options()
-        if "log" in options and options["log"]:
-            log_output_directory = options["output"]
-        crypto_detector = CryptoDetector(options)
-        crypto_detector.scan()
+# def monitor_crypto_activity(): # check l'activité intensive crypto
+#     try:
+#         log_output_directory = None
+#         options = Options(CryptoDetector.VERSION).read_all_options()
+#         if "log" in options and options["log"]:
+#             log_output_directory = options["output"]
+#         crypto_detector = CryptoDetector(options)
+#         crypto_detector.scan()
 
-        if crypto_detector.results.intensive_activity_detected():
-            alert_message = "Intensive use of cryptographic activity detected!"
+#         if crypto_detector.results.intensive_activity_detected():
+#             alert_message = "Intensive use of cryptographic activity detected!"
+#             print(alert_message)
+#             log_alert(alert_message)
+
+#     except CryptoDetectorError as expn:
+#         error_message = f"CryptoDetectorError: {str(expn)}"
+#         print(error_message)
+#         log_alert(error_message)
+#         if log_output_directory:
+#             Logger.write_log_files(log_output_directory)
+#         FileLister.cleanup_all_tmp_files()
+#     except KeyboardInterrupt:
+#         FileLister.cleanup_all_tmp_files()
+#         raise
+#     except Exception as expn:
+#         error_message = f"Unhandled exception: {str(expn)}\n\n{traceback.format_exc()}"
+#         print(error_message)
+#         log_alert(error_message)
+#         if log_output_directory:
+#             Logger.write_log_files(log_output_directory)
+#         FileLister.cleanup_all_tmp_files()
+
+def entropy_change(paths): # verifie l'entropy d'un fichier
+    try:
+        for path in paths:
+            file_name = path.split("/")[-1]
+            gas = ct.Solution(path)
+            alert_message = f'Entropy change detected for file {file_name}: {gas}'
             print(alert_message)
             log_alert(alert_message)
-
-    except CryptoDetectorError as expn:
-        error_message = f"CryptoDetectorError: {str(expn)}"
-        print(error_message)
-        log_alert(error_message)
-        if log_output_directory:
-            Logger.write_log_files(log_output_directory)
-        FileLister.cleanup_all_tmp_files()
-    except KeyboardInterrupt:
-        FileLister.cleanup_all_tmp_files()
-        raise
-    except Exception as expn:
-        error_message = f"Unhandled exception: {str(expn)}\n\n{traceback.format_exc()}"
-        print(error_message)
-        log_alert(error_message)
-        if log_output_directory:
-            Logger.write_log_files(log_output_directory)
-        FileLister.cleanup_all_tmp_files()
-
-def entropy_change(): # verifie l'entropy d'un fichier
-    try:
-        file = "your_file_name_here.cti"
-        gas1 = ct.Solution(file)
-        alert_message = f'Entropy change detected: {gas1}'
-        print(alert_message)
-        log_alert(alert_message)
     except Exception as expn:
         error_message = f"Error in entropy_change: {str(expn)}\n\n{traceback.format_exc()}"
         print(error_message)
         log_alert(error_message)
 
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('paths', nargs='*', default=['$HOME'], type=str, help='Paths to files or directories.')
+    args = parser.parse_args()
+    paths = args.paths
+    return paths
+
 def main():
-    process = current_process()
-    print(f'Daemon process: {process.daemon}')
+    # process = current_process()
+    # print(f'Daemon process: {process.daemon}')
     if os.geteuid() != 0:
         exit("You need to have root privileges to run this script.\n Exiting.")
+    paths = parse_arguments()
     # monitor_disk_read_abuse()
     # monitor_crypto_activity()
-    # entropy_change()
+    entropy_change(paths)
 
 if __name__ == "__main__":
     memory_limit() # Met une limite de 100 MB en utilisation de memoire (a voir si c'est correct) 
-    try: # Permet normalement de lancer le programme en daemon en fond, le silencer pour tester
-        process = Process(target=main, daemon=True)
-        process.start()
-        process.join()
-    except MemoryError:
-        error_message = '\n\nERROR: Memory limit of 100MB exceeded.'
-        print(error_message)
-        log_alert(error_message)
-        sys.exit(1)
+    main()
+    # try: # Permet normalement de lancer le programme en daemon en fond, le silencer pour tester
+    #     process = Process(target=main, daemon=True)
+    #     process.start()
+    #     process.join()
+    # except MemoryError:
+    #     error_message = '\n\nERROR: Memory limit of 100MB exceeded.'
+    #     print(error_message)
+    #     log_alert(error_message)
+    #     sys.exit(1)
