@@ -1,6 +1,6 @@
 FROM ubuntu:latest
 
-RUN apt-get update && apt-get upgrade && apt-get install python3 python
+RUN apt-get update && apt-get upgrade && apt-get install python3 
 
 COPY script.sh script.sh
 COPY inquisitor.py inquisitor.py

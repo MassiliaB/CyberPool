@@ -8,4 +8,5 @@ mactarg=$4
 # Enable ip forwarding 
 echo "1" /proc/sys/net/ipv4/ip_forward
 
-python3 inquisitor.py $ipsrc $macsrc $iptarg $mactarg
+tail -f /dev/null
+#python3 inquisitor.py $ipsrc $macsrc $iptarg $mactarg
