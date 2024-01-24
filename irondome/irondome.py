@@ -12,19 +12,21 @@ import cantera as ct
 import numpy as np
 import math
 from threading import Thread, Event
-
 log_file_path = "log/irondome.log"
 logging.basicConfig(filename=log_file_path, level=logging.INFO)
+
 class MonitoringThread(Thread):
     def __init__(self, target, args=()):
         super().__init__(target=target, args=args)
         self.stop_event = Event()
+    def run(self):
+        while not self.stop_event.is_set():
+            self._target(*self._args, **self._kwargs)
 
-    def stop(self):
-        self.stop_event.set()
-
-def log_alert(message): # enregistre les erreurs dans les logs
-    logging.info(message)
+def log_alert(message):  # enregistre les erreurs dans les logs
+    with open(log_file_path, 'a') as log_file:
+        log_file.write(message + '\n')
+        log_file.flush()
 
 def memory_limit():
     memory_limit_bytes = 100 * 1024 * 1024
