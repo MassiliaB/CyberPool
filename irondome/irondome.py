@@ -11,10 +11,17 @@ import argparse
 import cantera as ct
 import numpy as np
 import math
-from threading import Thread
+from threading import Thread, Event
 
 log_file_path = "log/irondome.log"
 logging.basicConfig(filename=log_file_path, level=logging.INFO)
+class MonitoringThread(Thread):
+    def __init__(self, target, args=()):
+        super().__init__(target=target, args=args)
+        self.stop_event = Event()
+
+    def stop(self):
+        self.stop_event.set()
 
 def log_alert(message): # enregistre les erreurs dans les logs
     logging.info(message)
@@ -24,7 +31,7 @@ def memory_limit():
     resource.setrlimit(resource.RLIMIT_AS, (memory_limit_bytes, memory_limit_bytes))
 
 def monitor_disk_read_abuse(): # check le disk usage
-    while True:
+    while not disk_read_thread.stop_event.is_set():
         timer = 60 
         stats = os.popen("cat /sys/block/sda/stat").read()
         stats_split = stats.split(' ')
@@ -119,7 +126,7 @@ def process_file(file_path):
 
 def entropy_change(paths):
     try:
-        while True:
+        while not entropy_thread.stop_event.is_set():
             for path in paths:
                 if os.path.isfile(path):
                     process_file(path)
@@ -139,7 +146,7 @@ def entropy_change(paths):
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('paths', nargs='*', default=['$HOME'], type=str, help='Paths to files or directories.')
+    parser.add_argument('paths', nargs='*', default=['/home/kali/CyberPool'], type=str, help='Paths to files or directories.')
     args = parser.parse_args()
     paths = args.paths
     return paths
@@ -152,8 +159,9 @@ def main():
     paths = parse_arguments()
 
     # Create threads for monitoring functions
-    disk_read_thread = Thread(target=monitor_disk_read_abuse)
-    entropy_thread = Thread(target=entropy_change, args=(paths,))
+    global disk_read_thread, entropy_thread
+    disk_read_thread = MonitoringThread(target=monitor_disk_read_abuse)
+    entropy_thread = MonitoringThread(target=entropy_change, args=(paths,))
     # Start the threads
     disk_read_thread.start()
     entropy_thread.start()
