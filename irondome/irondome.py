@@ -23,22 +23,45 @@ def memory_limit():
 
 def monitor_disk_read_abuse(): # check le disk usage
     timer = 5 
-    disk_stats = os.popen("cat /sys/block/sda/stat").read()
-    disk_stats_split = disk_stats.split(' ')
-    disk_stats_array = list(filter(None, disk_stats_split))
+    stats = os.popen("cat /sys/block/sda/stat").read()
+    stats_split = stats.split(' ')
+    stats_array = list(filter(None, stats_split))
 
     time.sleep(timer)
 
-    disk_stats_2 = os.popen("cat /sys/block/sda/stat").read()
-    disk_stats_split_2 = disk_stats_2.split(' ')
-    disk_stats_array_2 = list(filter(None, disk_stats_split_2))
+    stats_2 = os.popen("cat /sys/block/sda/stat").read()
+    stats_split_2 = stats_2.split(' ')
+    stats_array_2 = list(filter(None, stats_split_2))
+    iototal = [
+    int(stats_array_2[0]) - int(stats_array[0]),
+    int(stats_array_2[1]) - int(stats_array[1]),
+    int(stats_array_2[2]) - int(stats_array[2]),
+    int(stats_array_2[3]) - int(stats_array[3]),
+    int(stats_array_2[4]) - int(stats_array[4]),
+    int(stats_array_2[5]) - int(stats_array[5]),
+    int(stats_array_2[6]) - int(stats_array[6]),
+    int(stats_array_2[7]) - int(stats_array[7]),
+    int(stats_array_2[8]) - int(stats_array[8]),
+    int(stats_array_2[9]) - int(stats_array[9]),
+    int(stats_array_2[10]) - int(stats_array[10])
+    ]
 
-    disk_reads_diff = int(disk_stats_array_2[0]) - int(disk_stats_array[0])
-
-    if disk_reads_diff > 100:  # Adjust the threshold as needed
-        alert_message = "Disk read abuse detected!"
-        print(alert_message)
-        log_alert(alert_message)
+    description = [
+    "IO stats over last " + str(timer) + " seconds \n\n",
+    "read I/Os : " + str(iototal[0]),
+    "read merges : " + str(iototal[1]),
+    "read sectors : " + str(iototal[2]),
+    "read ticks (ms) : " + str(iototal[3]),
+    "write I/Os : " + str(iototal[4]),
+    "write merges : " + str(iototal[5]),
+    "write sectors : " + str(iototal[6]),
+    "write ticks (ms) : " + str(iototal[7]),
+    "in_flight : " + str(iototal[8]),
+    "io_ticks (ms) : " + str(iototal[9]),
+    "time_in_queue (ms) : " + str(iototal[10])
+    ]
+    for d in description:
+        print(d)
 
 def monitor_crypto_activity(): # check l'activité intensive crypto
     try:
@@ -89,9 +112,9 @@ def main():
     print(f'Daemon process: {process.daemon}')
     if os.geteuid() != 0:
         exit("You need to have root privileges to run this script.\n Exiting.")
-    monitor_disk_read_abuse()
-    monitor_crypto_activity()
-    entropy_change()
+    # monitor_disk_read_abuse()
+    # monitor_crypto_activity()
+    # entropy_change()
 
 if __name__ == "__main__":
     memory_limit() # Met une limite de 100 MB en utilisation de memoire (a voir si c'est correct) 
