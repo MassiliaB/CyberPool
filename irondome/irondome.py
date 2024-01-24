@@ -125,24 +125,18 @@ def process_file(file_path):
         log_alert(error_message)
 
 def entropy_change(paths):
-    try:
-        while not entropy_thread.stop_event.is_set():
-            for path in paths:
-                if os.path.isfile(path):
-                    process_file(path)
-                elif os.path.isdir(path):
-                    files_in_directory = [os.path.join(path, file) for file in os.listdir(path) if os.path.isfile(os.path.join(path, file))]
-                    for file_path in files_in_directory:
-                        process_file(file_path)
-                else:
-                    log_alert("\n-----------File entropy monitoring----------\n")
-                    log_alert(f"Invalid path: {path}")
-            time.sleep(60)
-    except Exception as expn:
-        error_message = "\n-----------File entropy monitoring----------\n"
-        error_message = error_message + f"Error in entropy_change: {str(expn)}\n\n{traceback.format_exc()}"
-        print(error_message)
-        log_alert(error_message)
+    while not entropy_thread.stop_event.is_set():
+        for path in paths:
+            if os.path.isfile(path):
+                process_file(path)
+            elif os.path.isdir(path):
+                files_in_directory = [os.path.join(path, file) for file in os.listdir(path) if os.path.isfile(os.path.join(path, file))]
+                for file_path in files_in_directory:
+                    process_file(file_path)
+            else:
+                log_alert("\n-----------File entropy monitoring----------\n")
+                log_alert(f"Invalid path: {path}")
+        time.sleep(60)
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
