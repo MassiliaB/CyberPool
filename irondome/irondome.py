@@ -17,12 +17,23 @@ log_file_path = "log/irondome.log"
 logging.basicConfig(filename=log_file_path, level=logging.INFO)
 
 class MonitoringThread(Thread):
-    def __init__(self, target, args=()):
+    def __init__(self, target, args=(), memory_limit_mb=None):
         super().__init__(target=target, args=args)
         self.stop_event = Event()
+        self.memory_limit_mb = memory_limit_mb
 
-    def stop(self):
-        self.stop_event.set()
+    def run(self):
+        # Set memory limit if provided
+        if self.memory_limit_mb:
+            self.set_memory_limit(self.memory_limit_mb)
+
+        while not self.stop_event.is_set():
+            self._target(*self._args, **self._kwargs)
+
+    def set_memory_limit(self, limit_mb):
+        # Convert MB to bytes
+        limit_bytes = limit_mb * 1024 * 1024
+        resource.setrlimit(resource.RLIMIT_AS, (limit_bytes, limit_bytes))
 
 def log_alert(message): # enregistre les erreurs dans les logs
     logging.info(message)
@@ -161,8 +172,8 @@ def main():
 
     # Create threads for monitoring functions
     global disk_read_thread, entropy_thread
-    disk_read_thread = MonitoringThread(target=monitor_disk_read_abuse)
-    entropy_thread = MonitoringThread(target=entropy_change, args=(paths,))
+    disk_read_thread = MonitoringThread(target=monitor_disk_read_abuse,memory_limit_mb=100)
+    entropy_thread = MonitoringThread(target=entropy_change, args=(paths,), memory_limit_mb=100)
     # Start the threads
     disk_read_thread.start()
     entropy_thread.start()
