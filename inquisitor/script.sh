@@ -1,12 +1,10 @@
 #!/bin/bash
 
-ipsrc=$1
-macsrc=$2
-iptarg=$3
-mactarg=$4
-
-# Enable ip forwarding 
-echo "1" /proc/sys/net/ipv4/ip_forward
+pip install scapy 
+IPSRC=$(ifconfig eth0 | awk '/inet /{print $2}' | grep -Eo '([0-9]*\.){3}[0-9]*')
+MACSRC=$(ifconfig eth0 | awk '/ether /{print $2}')
+IPTARG=$(echo $IPSRC | sed 's/\.2$/.3/')
+MACTARG=$(echo $MACSRC | sed 's/\.2$/.3/')
 
 tail -f /dev/null
-#python3 inquisitor.py $ipsrc $macsrc $iptarg $mactarg
+#python3 inquisitor.py $IPSRC $MACSRC $iptarg $mactarg

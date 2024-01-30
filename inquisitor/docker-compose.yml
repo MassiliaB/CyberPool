@@ -1,0 +1,19 @@
+version: '3'
+services:
+  victim:
+    image: victim
+    container_name: victim
+    networks:
+      - network
+    ports:
+      - "2121:2121"
+
+  attacker:
+    image: attacker
+    container_name: attacker
+    networks:
+      - network
+
+networks:
+  network:
+    driver: bridge

@@ -1,6 +1,3 @@
-ARGS ?= ip_src max_src ip_target mac_target
-SCAN ?= option ip
-
 all: build
 
 print_error:
@@ -13,24 +10,54 @@ ifeq ($(strip $(ARGS)$(SCAN)),)
 endif
 
 build:
-	docker build -t spoof .
+	@echo "Building victim's container"
+	docker build -t victim -f victim/Dockerfile .
+	@echo "Building attacker's container"
+	docker build -t attacker -f attacker/Dockerfile .
 
-run: print_error
-	docker run -d --name spoof spoof $(ARGS)
+inspect:
+	docker network inspect inquisitor_network
 
-run_scan: print_error
-	docker run -d --name spoof spoof $(SCAN)
+up:
+	docker-compose up
 
-exec:
-	docker exec -it spoof /bin/bash
+run:
+	@echo "Runnin victim's container"
+	docker run -d --name victim victim --network network
+	@echo "Runnin attacker's container"
+	docker run -d --name attacker attacker --network network
 
-clear_and_run: clear build run
+vexec:
+	docker exec -it victim /bin/bash
 
-clear:
-	@docker ps -q | xargs docker stop
-	@docker ps -aq | xargs docker rm
+aexec:
+	docker exec -it attacker /bin/bash
 
-clear_all:
+clear_and_run: clear build up
+
+stop:
+	@CONTAINERS=$$(docker ps -q); \
+	if [ -n "$$CONTAINERS" ]; then \
+	docker stop $$CONTAINERS; \
+	else \
+	echo "No running containers to stop."; \
+	fi
+	docker-compose down
+
+rm:
+	@CONTAINERS=$$(docker ps -a -q); \
+	if [ -n "$$CONTAINERS" ]; then \
+	docker rm $$CONTAINERS; \
+	else \
+	echo "No containers to remove."; \
+	fi
+
+clear_network:
+	docker network prune
+
+clear: stop rm clean_network
+
+clear_all: clear_network
 	docker system prune
 
 .PHONY: run run_scan clear_and_run clear clear_all
