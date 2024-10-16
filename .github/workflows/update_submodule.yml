@@ -20,6 +20,7 @@ jobs:
       CHECKOUT_BRANCH: 'main'
       PR_AGAINST_BRANCH: 'main'
       OWNER: 'MassiliaB'
+      TOKEN: ${{ secrets.UPDATE_SECRET }}
 
     steps:
       ##########################
